@@ -26,6 +26,7 @@ INK_SOFT = "#2B2B2B"
 PAGE_TEXT = "#FFFFFF"   
 PALETTE = [NAVY, CORAL, MINT, SLATE, CORAL_DARK, "#C8EFC5"]
 PRODUCT_COLORS = [NAVY, CORAL_DARK]
+PRODUCT_COLORS_TAB1 = [MINT, CORAL_DARK]
 
 st.markdown(
     f"""
@@ -144,7 +145,6 @@ def show(fig, height=400):
 
 
 # Load data
-
 @st.cache_data(show_spinner="Memuat data...")
 def load_data(path: str) -> pd.DataFrame:
     df = pd.read_excel(path, sheet_name=SHEET_NAME)
@@ -169,7 +169,6 @@ if not EXCEL_PATH.exists():
 df = load_data(str(EXCEL_PATH))
 
 # Sidebar: filter
-
 st.sidebar.header("🔎 Filter")
 
 min_date = df["Dispatch Date"].min().date()
@@ -203,15 +202,13 @@ mask = (
 filtered = df[mask].copy()
 
 # Header
-
 st.title("Gadget Sales Analytics")
 
 if filtered.empty:
     st.warning("Tidak ada data untuk kombinasi filter yang dipilih.")
     st.stop()
 
-# KPI (6 indikator, 2 baris)
-
+# KPI
 total_trx = len(filtered)
 unit_terjual = int(filtered["Quantity Sold"].sum())
 total_revenue = filtered["Total_Revenue"].sum()
@@ -237,7 +234,6 @@ kpi_card(c6, "⏱️", "Rata-rata Lead Time", f"{avg_lead:,.1f} hari".replace(".
          f"Region teratas: {top_region}", MINT)
 
 # Visualisasi
-
 tab1, tab2, tab3, tab4 = st.tabs(["📈 Ringkasan", "🏷️ Brand & Harga", "📊 Distribusi", "📋 Data"])
 
 with tab1:
@@ -250,9 +246,9 @@ with tab1:
         )
         monthly["Revenue (juta)"] = monthly["Total_Revenue"] / 1e6
         fig = px.line(monthly, x="Bulan", y="Revenue (juta)", color="Product", markers=True,
-                      title="Tren Revenue Bulanan", color_discrete_sequence=PRODUCT_COLORS)
-        fig.update_traces(line=dict(width=3), marker=dict(size=7),
-                          hovertemplate="%{x|%b %Y}<br>Rp %{y:,.1f} juta<extra>%{fullData.name}</extra>")
+                      title="Tren Revenue Bulanan", color_discrete_sequence=PRODUCT_COLORS_TAB1)
+        fig.update_traces(line=dict(width=3), marker=dict(size=7), hoverlabel=dict(bgcolor=PRODUCT_COLORS_TAB1),
+                          hovertemplate="%{x|%b %Y}<br>Rp %{y:,.1f} juta<extra></extra>")
         fig.update_layout(xaxis_title="", yaxis_title="Revenue (Rp juta)", legend_title_text="")
         show(fig, 420)
 
@@ -301,17 +297,6 @@ with tab2:
         show(fig, 440)
 
 with tab3:
-    left, right = st.columns(2)
-
-    with left:
-        fig = px.histogram(filtered, x="Price", color="Product", nbins=30, barmode="overlay",
-                           opacity=0.75, title="Distribusi Harga Produk",
-                           color_discrete_sequence=PRODUCT_COLORS)
-        fig.update_layout(xaxis_title="Harga (Rp)", yaxis_title="Jumlah transaksi",
-                          legend_title_text="")
-        show(fig, 440)
-
-    with right:
         heat = filtered.pivot_table(index="Region", columns="Brand", values="Total_Revenue",
                                     aggfunc="sum", fill_value=0) / 1e6
         fig = px.imshow(heat, aspect="auto", text_auto=".0f",
